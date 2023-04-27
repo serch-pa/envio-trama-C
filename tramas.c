@@ -11,9 +11,9 @@ void main(){
   				                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x43, 0x05, 0x90, 0x6d};            // 01 RNR
                                                                                                                                                 // 10 REJ
     
-    char ss[][5]={"RR","RNR","REJ","SREJ"};
-    char uc[][5]={"UI","SIM","-","SARM","UP","-","-","SABM","DISC","-","-","SARME","-","-","-","SABME","SNRM","-","-","RSET","-","-","-","XID"};
-    char ur[][5]={"UI","RIM","-","DM","-","-","-","-","RD","-","-","-","UA","-","-","-","-","FRMF","-","-","-","-","-","XID"};                                                                                                                                    // 11 SREJ
+    char ss[4][4]={"RR","RNR","REJ","SREJ"};
+    char uc[32][6]={"UI","SIM","-","SARM","UP","-","-","SABM","DISC","-","-","SARME","-","-","-","SABME","SNRM","-","-","RSET","-","-","-","XID","-","-","-","-","-","-","-","-"};
+    char ur[32][5]={"UI","RIM","-","DM","-","-","-","-","RD","-","-","-","UA","-","-","-","-","FRMR","-","-","-","-","-","XID","-","-","-","-","-","-","-","-"};                                                                                                                                    // 11 SREJ
     unsigned short int tot = (trama[12] << 8) | trama[13];
 	
 	printf("***********************Cabecera Ethernet***********************\n");
@@ -44,11 +44,13 @@ void main(){
 		        printf("\n\n El SS de la trama es: %s y su N(R) es: %d \n",ss[(trama[16] >> 2) & 3], trama[17] >> 1);
                 break;
             case 3:
-                printf("\n\n T-U \n");
-
+                printf("\n\n T-U");
+                unsigned char m = trama[16] << 4;
+                m = ((trama[16] >> 5) << 2) | (m >> 6);
+                printf("\n\n El Comando es %s y la Respuesta es %s y el mensaje en decimal es %d \n", uc[m], ur[m], m);
                 break;
             default:
-                printf("\n\n T-I \n");
+                printf("\n\n T-Is");
                 printf("\n\n EL N(S) de la trama es: %d y su N(R) es: %d \n", trama[16] >> 1, trama[17] >> 1);
                 break;
         }
