@@ -253,6 +253,24 @@ void analizador_trama(unsigned char trama[]){
 
         } else if(!(tot ^ 2054)){
 			printf("\n\n Cabecera ARP \n");
+			printf("\n El tipo de hardware es: ");
+			if(trama[15] & 1)
+				printf("Ethernet\n");
+			else
+				printf("IEEE 802\n");
+			printf("\n El tipo de protocolo es: ");
+			if(trama[16] == 8 && trama[17] == 0)
+				printf("IPv4\n");
+			else
+				printf("IPv6\n");
+			printf("\n La longitud de la direccion de hardware es: %d", trama[18]);
+			printf("\n La longitud de la direccion de protocolo es: %d", trama[19]);
+			printf("\n La operacion es: ");
+			if(trama[21] & 1)
+				printf("Solicitud\n");
+			else
+				printf("Respuesta\n");
+
 
 		} else{
 			printf("\n\n Otro: %02x %02x \n",trama[12],trama[13]);
