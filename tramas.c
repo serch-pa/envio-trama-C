@@ -1,11 +1,12 @@
 #include <stdio.h>
+#include "check.c"
 
 void analizador_trama(unsigned char trama[]);
 
 void main(){
              /*        MAC DESTINO                      |   MAC ORIGEN                      |    ToT    |   DATOS
                                                         |                                   |           | CONTROL               */
-    unsigned char trama[][200] =
+unsigned char trama[][200] =
 			{
 					{0x00, 0x02, 0xb3, 0x9c, 0xae, 0xba, 0x00, 0x02, 0xb3, 0x9c, 0xdf, 0x1b, 0x00, 0x03, 0xf0, 0xf0,
 					 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -191,9 +192,19 @@ void main(){
 					 0x67, 0x02, 0xaa, 0xbb, 0xcc, 0xdd, 0x04, 0x0c, 0x00, 0x35, 0x00, 0x2e, 0x85, 0x7c, 0xe2, 0x1a,
 					 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, 0x77, 0x77, 0x03, 0x69,
 					 0x73, 0x63, 0x05, 0x65, 0x73, 0x63, 0x6f, 0x6d, 0x03, 0x69, 0x70, 0x6e, 0x02, 0x6d, 0x78, 0x00,
-					 0x00, 0x1c, 0x00, 0x01}};                                                                                                                                                // 10 REJ
+					 0x00, 0x1c, 0x00, 0x01},
+					 
+					{0x00 ,0x01 ,0xf4 ,0x43 ,0xc9 ,0x19 ,0x00 ,0x18 ,0xe7 ,0x33 ,0x3d ,0xc3 ,0x08 ,0x00 ,0x45 ,0x00,  //TRAMA TAREA
+					 0x00 ,0x28 ,0xf6 ,0x18 ,0x40 ,0x00 ,0x80 ,0x06 ,0x6b ,0xa4 ,0x94 ,0xcc ,0x19 ,0xf5 ,0x40 ,0xe9,  
+					 0xa9 ,0x68 ,0x08 ,0x3a ,0x00 ,0x50 ,0x42 ,0xfe ,0xd8 ,0x4a ,0x6a ,0x66 ,0xac ,0xc8 ,0x50 ,0x10,  
+					 0x42 ,0x0e ,0x00 ,0x00 ,0x00 ,0x00 },
+					 
+					{0xaa ,0xaa ,0xaa ,0xaa ,0xaa ,0xaa ,0xbb ,0xbb ,0xbb ,0xbb ,0xbb ,0xbb ,0x08 ,0x00 ,0x45 ,0x02,  //TRAMA EJERCICIO CLASE
+					 0x00 ,0x30 ,0x02 ,0x58 ,0x40 ,0x00 ,0x32 ,0x06 ,0x1a ,0x4f ,0x96 ,0x0e ,0x00 ,0x02 ,0x96 ,0x0e,  
+					 0x00 ,0x01 ,0x07 ,0xd0 ,0x07 ,0xd0 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x01 ,0x70 ,0x02,  
+					 0x00 ,0x00 ,0x2f ,0xf4 ,0x00 ,0x00 ,0x11 ,0x12 ,0x00 ,0x00 ,0x13 ,0x14 ,0x00 ,0x00}};                                                                                                                                             // 10 REJ
         
-    for(char i=0; i<36 ; i++)
+    for(char i=0; i<38 ; i++)
         analizador_trama(trama[i]);
 }
 
@@ -249,31 +260,153 @@ void analizador_trama(unsigned char trama[]){
             }
 
         }else if(!(tot ^ 2048)){
+			char tamano_ip = (trama[14] & 15)*4;
 			printf("\n\n Cabecera IP \n");
+			printf("\n    La version es: %d", trama[14] >> 4);
+			printf("\n\n    La longitud de la cabecera es: %d bytes", tamano_ip);
+			printf("\n\n    Tipo de servicio: ");
+			if(trama[15] & 2)
+				printf("\n     Costo Minimo");
+			if(trama[15] & 4)
+				printf("\n     Maximiza la confiabilidad");
+			if(trama[15] & 8)
+				printf("\n     Maximiza la salida");
+			if(trama[15] & 16)
+				printf("\n     Minimiza el retardo");
+
+			printf("\n\n    Tamano total: %d bytes", (trama[16] << 8) | trama[17]);
+			printf("\n\n    Identificador: %d", (trama[18] << 8) | trama[19]);
+			printf("\n\n    Banderas: ");
+			if(trama[20] & 64)
+				printf("\n       No fragmentar");
+			if(trama[20] & 32)
+				printf("\n       Mas fragmentos");
+			printf("\n\n    Desplazamiento de fragmento: %d", ((trama[20] & 31) << 8 | trama[21]));
+			printf("\n\n    Tiempo de vida: %d saltos", trama[22]);
+			printf("\n\n    Protocolo: ");
+			switch(trama[23]){
+				case 1:
+					printf("ICMP");
+					break;
+				case 6:
+					printf("TCP");
+					break;
+				case 17:
+					printf("UDP");
+					break;
+				default:
+					printf("Otro");
+					break;
+			}
+			printf("\n\n    Checksum: %02x%02x \n       Envio ", trama[24], trama[25]);
+			if( checksum(trama, tamano_ip+14, 14) == 0)
+				printf("correcto\n");
+			else
+				printf("incorrecto\n");
+			printf("\n    Direccion IP origen: %d.%d.%d.%d",trama[26],trama[27],trama[28],trama[29]);
+			printf("\n\n    Direccion IP destino: %d.%d.%d.%d",trama[30],trama[31],trama[32],trama[33]);
+			printf("\n\n    Opciones: ");
+			for (int i = 34; i < tamano_ip + 14; i++)
+				printf("%02x ", trama[i]);
+			
+			if(trama[23] == 1){
+
+				printf("\n\n         Cabecera ICMP");
+				printf("\n\n         Tipo: ");
+				switch(trama[tamano_ip + 14]){
+					case 0:
+						printf("Respuesta Echo");
+					break;
+					case 8:
+						printf("Solicitud Echo");
+					break;
+					defaul:
+						printf("Otro");
+					break;
+				}
+				printf("\n\n         Codigo: %d", trama[tamano_ip + 15]);
+				printf("\n\n         Checksum: %02x%02x \n            Envio ", trama[tamano_ip + 16], trama[tamano_ip + 17]);
+			}
+			
+			else if(trama[23] == 6){
+					printf("\n\n         Cabecera TCP");
+					printf("\n\n         Puerto origen: %d", (trama[tamano_ip + 14] << 8) | trama[tamano_ip + 15]);
+					printf("\n\n         Puerto destino: %d", (trama[tamano_ip + 16] << 8) | trama[tamano_ip + 17]);
+					printf("\n\n         Numero de secuencia: %d", (trama[tamano_ip + 18] << 24) | (trama[tamano_ip + 19] << 16) | (trama[tamano_ip + 20] << 8) | trama[tamano_ip + 21]);
+					printf("\n\n         Numero de acuse de recibo: %d", (trama[tamano_ip + 22] << 24) | (trama[tamano_ip + 23] << 16) | (trama[tamano_ip + 24] << 8) | trama[tamano_ip + 25]);
+					char tamano_tcp = (trama[tamano_ip + 26] >> 4)*4;
+					printf("\n\n         Longitud de cabecera: %d bytes", tamano_tcp);
+					printf("\n\n         Banderas: ");
+					if(trama[tamano_ip + 27] & 1)
+						printf("\n               No mas datos");
+					if(trama[tamano_ip + 27] & 2)
+						printf("\n               Sincronizar");
+					if(trama[tamano_ip + 27] & 4)
+						printf("\n               Reiniciar conexion");
+					if(trama[tamano_ip + 27] & 8)
+						printf("\n               Sacar datos");
+					if(trama[tamano_ip + 27] & 16)
+						printf("\n               Consultar acuse");
+					if(trama[tamano_ip + 27] & 32)
+						printf("\n               Consulta de puntero Urgente");
+					printf("\n\n         Ventana: %d", (trama[tamano_ip + 28] << 8) | trama[tamano_ip + 29]);
+					unsigned char subcabecera[tamano_tcp];
+					for (char i = 0; i < 8; i++)
+						subcabecera[i] = trama[26 + i];
+					subcabecera[8] = 0;
+					subcabecera[9] = 6;
+					subcabecera[10] = 0;
+					subcabecera[11] = tamano_tcp;
+					for (char i = 0; i < tamano_tcp; i++)
+						subcabecera[12 + i] = trama[tamano_ip + 14 + i];
+					printf("\n\n    Checksum: %02x %02x \n       Envio ", trama[tamano_ip+30], trama[tamano_ip+31]);
+					if( checksum(subcabecera, tamano_tcp+12, 0) == 0)
+						printf("correcto\n");
+					else
+						printf("incorrecto\n");
+					printf("\n\n         Puntero urgente: %d", (trama[tamano_ip + 32] << 8) | trama[tamano_ip + 33]);
+					printf("\n\n         Opciones: ");
+					for (int i = tamano_ip + 34; i < tamano_ip + 14 + tamano_tcp ; i++)
+						printf("%02x ", trama[i]);
+			}
+			
+			else if(trama[23] == 17){
+				printf("\n\n         Cabecera UDP\n\n");
+			}
+
+			else
+				printf("\n\n         Otro Protocolo\n\n");
+
+
 
         } else if(!(tot ^ 2054)){
 			printf("\n\n Cabecera ARP \n");
-			printf("\n El tipo de hardware es: ");
+			printf("\n    El tipo de hardware es: ");
 			if(trama[15] & 1)
 				printf("Ethernet\n");
 			else
 				printf("IEEE 802\n");
-			printf("\n El tipo de protocolo es: ");
+			printf("\n    El tipo de protocolo es: ");
 			if(trama[16] == 8 && trama[17] == 0)
 				printf("IPv4\n");
 			else
 				printf("IPv6\n");
-			printf("\n La longitud de la direccion de hardware es: %d", trama[18]);
-			printf("\n La longitud de la direccion de protocolo es: %d", trama[19]);
-			printf("\n La operacion es: ");
+			printf("\n    La longitud de la direccion de hardware es: %d", trama[18]);
+			printf("\n\n    La longitud de la direccion de protocolo es: %d", trama[19]);
+			printf("\n\n    La operacion es: ");
 			if(trama[21] & 1)
 				printf("Solicitud\n");
 			else
 				printf("Respuesta\n");
+			printf("\n    La dirección fisica de origen es: %02x%02x:%02x%02x:%02x%02x ",trama[22],trama[23],trama[24],trama[25],trama[26],trama[27]);
+			printf("\n\n    La dirección IP de origen es: %d.%d.%d.%d",trama[28],trama[29],trama[30],trama[31]);
+			printf("\n\n    La dirección fisica de destino es: %02x%02x:%02x%02x:%02x%02x ",trama[32],trama[33],trama[34],trama[35],trama[36],trama[37]);
+			printf("\n\n    La dirección IP de destino es: %d.%d.%d.%d \n\n",trama[38],trama[39],trama[40],trama[41]);
 
 
 		} else{
 			printf("\n\n Otro: %02x %02x \n",trama[12],trama[13]);
 
 		}
+		printf("\n\n");
 }
